@@ -3,3 +3,5 @@
 
 source(here::here("R", "01_download_prices.R"))
 # later scripts get added here as we write them
+
+source(here::here("R", "02_build_returns.R"))
