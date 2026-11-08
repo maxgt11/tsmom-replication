@@ -38,3 +38,7 @@ EXPECTED_ROLLS <- c(
 
 # MOP annualize daily variance with 261 trading days
 TRADING_DAYS <- 261
+
+# Volatility estimate and position sizing (MOP 2012)
+VOL_COM    <- 60     # center of mass of EWMA weights, in days
+TARGET_VOL <- 0.40   # annualized volatility target per position
