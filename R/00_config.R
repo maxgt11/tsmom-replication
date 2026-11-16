@@ -42,3 +42,10 @@ TRADING_DAYS <- 261
 # Volatility estimate and position sizing (MOP 2012)
 VOL_COM    <- 60     # center of mass of EWMA weights, in days
 TARGET_VOL <- 0.40   # annualized volatility target per position
+
+# TSMOM strategy (MOP 2012 baseline: 12-month lookback, 1-month holding)
+LOOKBACK <- 12   # months
+
+# AQR's published TSMOM factors (updated version of the MOP data)
+AQR_URL  <- "https://images.aqr.com/-/media/AQR/Documents/Insights/Data-Sets/Time-Series-Momentum-Factors-Monthly.xlsx"
+AQR_FILE <- here("data", "raw", "aqr_tsmom_factors.xlsx")

@@ -19,3 +19,8 @@ if (!file.exists(RAW_PRICES)) {
   write.csv(px_raw, RAW_PRICES, row.names = FALSE)
   writeLines(as.character(Sys.Date()), RAW_META)   # records when the snapshot was taken
 }
+
+# AQR TSMOM factors, downloaded once like the prices
+if (!file.exists(AQR_FILE)) {
+  download.file(AQR_URL, AQR_FILE, mode = "wb")
+}

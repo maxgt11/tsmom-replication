@@ -1,0 +1,106 @@
+---
+title: "Time Series Momentum in Commodities"
+subtitle: "Replicating Moskowitz, Ooi and Pedersen (2012)"
+author: "Max Garcia-Tunon"
+date: "STAT 5200, November 2026"
+output: beamer_presentation
+header-includes:
+  - \usepackage{booktabs}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE,
+                      out.width = "85%", fig.align = "center")
+library(here)
+perf <- read.csv(here("output", "tables", "tsmom_performance.csv"))
+comp <- read.csv(here("output", "tables", "aqr_comparison.csv"))
+ds   <- read.csv(here("output", "tables", "data_summary.csv"))
+f2   <- function(x) formatC(x, format = "f", digits = 2)
+pct  <- function(x) paste0(formatC(100 * x, format = "f", digits = 1), "\\%")
+```
+
+## The question
+
+- Does an asset's **own** past return predict its future return?
+- MOP (2012): 58 futures markets, 1985 to 2009
+- A market's past 12-month return predicts its next-month return, in every asset class
+- Trading on it ("time series momentum") earned strong risk-adjusted returns, and closely tracks what trend-following funds do
+
+## The strategy
+
+At the end of each month, for each market $s$:
+
+$$r^{TSMOM}_{s,t+1} = \text{sign}(r_{s,\,t-12 \to t}) \cdot \frac{40\%}{\sigma_{s,t}} \cdot r_{s,t+1}$$
+
+- Long if the past year was up, short if down
+- Each position scaled to 40% volatility, so every market carries equal risk
+- $\sigma_{s,t}$: exponentially weighted volatility, 60-day center of mass, using only past data
+- Portfolio: equal-weighted average across markets
+
+## My replication
+
+- Commodities only: `r nrow(ds)` markets (energy, metals, grains, softs, livestock)
+- Daily front-month futures from Yahoo Finance, 2000 to 2026
+- Missing vs. MOP: LME metals and ICE gasoil
+- Platinum starts in 2010 (Yahoo missing about half of trading days before)
+- Fully scripted pipeline in R: download, clean, signal, portfolio, validation
+
+## The main data problem: futures rolls
+
+- Yahoo's series switches contracts when the front month expires
+- Roll-day return = true return + spread between the two contracts
+- Example: natural gas, January 29, 2026: a $-64\%$ "return" is mostly the gap between an expiring, squeezed February contract and a cheaper March contract
+- I tried detecting rolls from volume jumps: it works for crude after 2015, fails where Yahoo's volume data is unreliable
+
+## Results
+
+```{r}
+knitr::kable(
+  data.frame(Period = perf$period, `Ann. mean` = pct(perf$ann_mean),
+             `Ann. vol` = pct(perf$ann_vol), Sharpe = f2(perf$sharpe),
+             `t-stat` = f2(perf$t_stat), Months = perf$n_months,
+             check.names = FALSE),
+  format = "latex", booktabs = TRUE, escape = FALSE)
+```
+
+- Positive in both periods, weaker after 2009
+
+## Growth of $1
+
+```{r}
+knitr::include_graphics(here("output", "figures", "tsmom_cumulative.png"))
+```
+
+## Validation against AQR's published factor
+
+```{r}
+knitr::kable(
+  data.frame(Period = comp$period, Correlation = f2(comp$correlation),
+             `$R^2$` = f2(comp$r_squared), `Sharpe (mine)` = f2(comp$sharpe_ours),
+             `Sharpe (AQR)` = f2(comp$sharpe_aqr), check.names = FALSE),
+  format = "latex", booktabs = TRUE, escape = FALSE)
+```
+
+- Correlation of `r f2(comp$correlation[1])`: the construction matches
+- Through 2009, the Sharpe gap is my data; after 2010, both are weak
+
+## Mine vs. AQR
+
+```{r}
+knitr::include_graphics(here("output", "figures", "aqr_comparison.png"))
+```
+
+## Lessons from replicating
+
+- Free futures data is not roll-adjusted, and it matters most in markets with large spreads between contracts (natural gas)
+- Built-in checks caught real data problems: a missing month for cattle, sparse platinum data, a negative crude price in April 2020
+- The signal is robust: despite the data issues, the replication tracks AQR closely
+
+## Next: my research project
+
+- TSMOM funds act on the **sign** of the trailing 12-month return
+- When that return crosses zero, trend followers should flip positions at once
+- Regression discontinuity at the zero cutoff, using CFTC managed-money positions:
+  - Do speculative positions jump at the cutoff?
+  - Do prices move in the weeks after?
+- This replication builds the running variable
